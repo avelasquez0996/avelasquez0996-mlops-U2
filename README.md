@@ -160,14 +160,69 @@ curl -X POST http://localhost:5000/predecir \
 
 ## Categorías de Enfermedad
 
-El modelo predice 4 categorías basadas en síntomas:
+El modelo predice 5 categorías basadas en síntomas:
 
 | Categoría | Descripción | Trigger |
 |-----------|-------------|---------|
 | **NO ENFERMO** | Sin signos de enfermedad | Puntuación < 0.2 |
 | **ENFERMEDAD LEVE** | Síntomas leves | 0.2 ≤ Puntuación < 0.4 |
 | **ENFERMEDAD AGUDA** | Síntomas agudos | 0.4 ≤ Puntuación < 0.7 |
-| **ENFERMEDAD CRÓNICA** | Síntomas severos/crónicos | Puntuación ≥ 0.7 |
+| **ENFERMEDAD CRÓNICA** | Síntomas severos/crónicos | 0.7 ≤ Puntuación < 0.85 |
+| **ENFERMEDAD TERMINAL** | Condición crítica | Puntuación ≥ 0.85 |
+
+## Cómo Obtener Predicciones
+
+### Método 1: Endpoint /predecir
+
+Envíe una solicitud POST con los datos del paciente:
+
+```bash
+curl -X POST http://localhost:5000/predecir \
+  -H "Content-Type: application/json" \
+  -d '{"edad": 45, "fiebre": 39.5, "dolor": 8}'
+```
+
+**Ejemplo de respuesta**:
+```json
+{
+  "resultado": "ENFERMEDAD CRÓNICA",
+  "entrada": {
+    "edad": 45,
+    "fiebre": 39.5,
+    "dolor": 8
+  }
+}
+```
+
+### Método 2: Obtener Estadísticas de Predicciones
+
+Para consultar estadísticas agregadas de todas las predicciones realizadas:
+
+```bash
+curl http://localhost:5000/estadisticas
+```
+
+**Respuesta**:
+```json
+{
+  "total_predicciones": 10,
+  "por_categoria": {
+    "NO ENFERMO": 2,
+    "ENFERMEDAD LEVE": 3,
+    "ENFERMEDAD AGUDA": 2,
+    "ENFERMEDAD CRÓNICA": 2,
+    "ENFERMEDAD TERMINAL": 1
+  },
+  "ultimas_5_predicciones": [
+    {
+      "timestamp": "2025-11-12T10:30:45",
+      "entrada": {"edad": 45, "fiebre": 39.5, "dolor": 8},
+      "resultado": "ENFERMEDAD CRÓNICA"
+    }
+  ],
+  "fecha_ultima_prediccion": "2025-11-12T10:30:45"
+}
+```
 
 ## Modelo Mockeado
 
@@ -180,7 +235,16 @@ puntuación = (
     edad * 0.15 +                # 15% Edad
     fiebre * dolor * 0.10        # Sinergia entre síntomas
 )
+
+# Clasificación por puntuación:
+# < 0.2    → NO ENFERMO
+# 0.2-0.4  → ENFERMEDAD LEVE
+# 0.4-0.7  → ENFERMEDAD AGUDA
+# 0.7-0.85 → ENFERMEDAD CRÓNICA
+# ≥ 0.85   → ENFERMEDAD TERMINAL
 ```
+
+**Nota**: En una solución real, se requeriría reentrenamiento del modelo para agregar nuevas categorías. En este ejercicio simplificado, se agregaron mediante lógica de clasificación.
 
 ## Tecnologías Utilizadas
 
