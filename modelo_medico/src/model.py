@@ -21,7 +21,8 @@ class MedicalModel:
         "NO ENFERMO",
         "ENFERMEDAD LEVE",
         "ENFERMEDAD AGUDA",
-        "ENFERMEDAD CRÓNICA"
+        "ENFERMEDAD CRÓNICA",
+        "ENFERMEDAD TERMINAL"
     ]
     
     def __init__(self):
@@ -99,8 +100,9 @@ class MedicalModel:
         Umbrales:
         - < 0.2: NO ENFERMO
         - 0.2-0.4: ENFERMEDAD LEVE
-        - 0.4-0.7: ENFERMEDAD AGUDA
-        - >= 0.7: ENFERMEDAD CRÓNICA
+        - 0.4-0.65: ENFERMEDAD AGUDA
+        - 0.65-0.85: ENFERMEDAD CRÓNICA
+        - >= 0.85: ENFERMEDAD TERMINAL
         
         Args:
             puntuacion (float): Puntuación de enfermedad [0, 1]
@@ -112,10 +114,12 @@ class MedicalModel:
             return self.CATEGORIAS[0]  # NO ENFERMO
         elif puntuacion < 0.4:
             return self.CATEGORIAS[1]  # ENFERMEDAD LEVE
-        elif puntuacion < 0.7:
+        elif puntuacion < 0.65:
             return self.CATEGORIAS[2]  # ENFERMEDAD AGUDA
-        else:
+        elif puntuacion < 0.85:
             return self.CATEGORIAS[3]  # ENFERMEDAD CRÓNICA
+        else:
+            return self.CATEGORIAS[4]  # ENFERMEDAD TERMINAL
     
     def predecir_con_scores(self, datos_procesados):
         """

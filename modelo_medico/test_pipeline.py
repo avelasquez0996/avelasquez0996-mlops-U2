@@ -92,11 +92,19 @@ def test_model():
     print(f"  Predicción: {prediccion}")
     assert prediccion == "ENFERMEDAD CRÓNICA", f"Esperaba ENFERMEDAD CRÓNICA, recibí {prediccion}"
     
-    # Test 3: Con scores
+    # Test 3: Enfermedad terminal
+    datos = {"edad": 80, "fiebre": 40.5, "dolor": 10}
+    datos_proc = preprocessor.procesar(datos)
+    prediccion = model.predecir(datos_proc)
+    print(f"\nTest 3 - Enfermedad terminal (fiebre=40.5, dolor=10):")
+    print(f"  Predicción: {prediccion}")
+    assert prediccion == "ENFERMEDAD TERMINAL", f"Esperaba ENFERMEDAD TERMINAL, recibí {prediccion}"
+    
+    # Test 4: Con scores
     datos = {"edad": 30, "fiebre": 37.5, "dolor": 5}
     datos_proc = preprocessor.procesar(datos)
     resultado = model.predecir_con_scores(datos_proc)
-    print(f"\nTest 3 - Con scores (fiebre=37.5, dolor=5):")
+    print(f"\nTest 4 - Con scores (fiebre=37.5, dolor=5):")
     print(f"  Predicción: {resultado['prediccion']}")
     print(f"  Scores: {resultado['scores']}")
     
@@ -210,6 +218,60 @@ def test_api():
     print("\n✅ Tests de API PASADOS")
 
 
+def test_estadisticas():
+    """Prueba el módulo de estadísticas"""
+    print("\n" + "="*60)
+    print("TEST 7: Estadísticas de Predicciones")
+    print("="*60)
+    
+    from app import app, estadisticas
+    
+    # Limpiar estadísticas previas
+    estadisticas.limpiar_estadisticas()
+    
+    client = app.test_client()
+    
+    # Verificar estadísticas iniciales vacías
+    response = client.get("/estadisticas")
+    print(f"\n✓ GET /estadisticas (inicial) → Status: {response.status_code}")
+    assert response.status_code == 200
+    
+    stats = response.get_json()
+    print(f"  Total predicciones: {stats['total_predicciones']}")
+    assert stats['total_predicciones'] == 0, "Debería haber 0 predicciones inicialmente"
+    
+    # Realizar 3 predicciones
+    datos_tests = [
+        {"edad": 20, "fiebre": 36.2, "dolor": 1, "esperado": "NO ENFERMO"},
+        {"edad": 45, "fiebre": 38.5, "dolor": 7, "esperado": "ENFERMEDAD AGUDA"},
+        {"edad": 80, "fiebre": 40.5, "dolor": 10, "esperado": "ENFERMEDAD TERMINAL"}
+    ]
+    
+    for datos in datos_tests:
+        response = client.post("/predecir", json={
+            "edad": datos["edad"],
+            "fiebre": datos["fiebre"],
+            "dolor": datos["dolor"]
+        })
+        assert response.status_code == 200
+    
+    # Verificar estadísticas después de predicciones
+    response = client.get("/estadisticas")
+    stats = response.get_json()
+    
+    print(f"\n✓ Después de 3 predicciones:")
+    print(f"  Total predicciones: {stats['total_predicciones']}")
+    print(f"  Conteos por categoría: {stats['por_categoria']}")
+    print(f"  Últimas 5: {len(stats['ultimas_5_predicciones'])} registradas")
+    print(f"  Última predicción: {stats['ultima_prediccion']}")
+    
+    assert stats['total_predicciones'] == 3, "Debería haber 3 predicciones"
+    assert len(stats['ultimas_5_predicciones']) == 3, "Debería haber 3 en últimas 5"
+    assert stats['ultima_prediccion'] is not None, "Debería haber última predicción"
+    
+    print("\n✅ Tests de estadísticas PASADOS")
+
+
 def main():
     """Ejecuta todos los tests"""
     print("\n" + "="*60)
@@ -223,6 +285,7 @@ def main():
         test_data_loader()
         test_metrics()
         test_api()
+        test_estadisticas()
         
         print("\n" + "="*60)
         print("✅ TODOS LOS TESTS PASARON EXITOSAMENTE")

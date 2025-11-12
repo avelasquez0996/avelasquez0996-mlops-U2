@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from src.preprocessor import Preprocessor
 from src.model import MedicalModel
 from src.validator import DataValidator
+from src.estadisticas import EstadisticasPredicciones
 
 app = Flask(__name__)
 
@@ -9,6 +10,7 @@ app = Flask(__name__)
 preprocessor = Preprocessor()
 model = MedicalModel()
 validator = DataValidator()
+estadisticas = EstadisticasPredicciones()
 
 
 # --- Ruta raíz informativa ---
@@ -53,6 +55,14 @@ def predecir():
         # Predicción del modelo
         resultado = model.predecir(datos_procesados)
         
+        # Registrar predicción en estadísticas
+        estadisticas.registrar_prediccion(
+            edad=datos["edad"],
+            fiebre=datos["fiebre"],
+            dolor=datos["dolor"],
+            resultado=resultado
+        )
+        
         # Respuesta con estructura solicitada
         return jsonify({
             "resultado": resultado,
@@ -61,6 +71,24 @@ def predecir():
 
     except Exception as e:
         return jsonify({"error": f"Error interno: {str(e)}"}), 500
+
+
+# --- Endpoint de estadísticas ---
+@app.route("/estadisticas", methods=["GET"])
+def obtener_estadisticas():
+    """
+    Retorna estadísticas de predicciones realizadas.
+    Incluye:
+    - Total de predicciones
+    - Conteos por categoría
+    - Últimas 5 predicciones
+    - Fecha de última predicción
+    """
+    try:
+        stats = estadisticas.obtener_estadisticas()
+        return jsonify(stats), 200
+    except Exception as e:
+        return jsonify({"error": f"Error al obtener estadísticas: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
