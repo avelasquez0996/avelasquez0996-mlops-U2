@@ -10,7 +10,11 @@ app = Flask(__name__)
 preprocessor = Preprocessor()
 model = MedicalModel()
 validator = DataValidator()
-estadisticas = EstadisticasPredicciones()
+
+
+def get_estadisticas():
+    """Obtiene una instancia fresca de estadísticas desde el archivo."""
+    return EstadisticasPredicciones()
 
 
 # Ruta raíz informativa
@@ -32,37 +36,38 @@ def predecir():
     """
     try:
         datos = request.get_json()
-        
+
         # Validación de entrada
         if not datos:
             return jsonify({"error": "Se requiere JSON en el body"}), 400
-        
+
         # Validar campos requeridos
         campos_requeridos = ["edad", "fiebre", "dolor"]
         if not all(k in datos for k in campos_requeridos):
             return jsonify({
                 "error": f"Faltan datos. Se requieren: {', '.join(campos_requeridos)}"
             }), 400
-        
+
         # Validar tipos y rangos
         validacion = validator.validar(datos)
         if not validacion["valido"]:
             return jsonify({"error": validacion["mensaje"]}), 400
-        
+
         # Preprocesar datos
         datos_procesados = preprocessor.procesar(datos)
-        
+
         # Predicción del modelo
         resultado = model.predecir(datos_procesados)
-        
+
         # Registrar predicción en estadísticas
-        estadisticas.registrar_prediccion(
+        stats = get_estadisticas()
+        stats.registrar_prediccion(
             edad=datos["edad"],
             fiebre=datos["fiebre"],
             dolor=datos["dolor"],
             resultado=resultado
         )
-        
+
         # Respuesta con estructura solicitada
         return jsonify({
             "resultado": resultado,
@@ -85,8 +90,9 @@ def obtener_estadisticas():
     - Fecha de última predicción
     """
     try:
-        stats = estadisticas.obtener_estadisticas()
-        return jsonify(stats), 200
+        stats = get_estadisticas()
+        stats_data = stats.obtener_estadisticas()
+        return jsonify(stats_data), 200
     except Exception as e:
         return jsonify({"error": f"Error al obtener estadísticas: {str(e)}"}), 500
 
