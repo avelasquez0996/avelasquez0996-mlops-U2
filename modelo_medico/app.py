@@ -10,7 +10,11 @@ app = Flask(__name__)
 preprocessor = Preprocessor()
 model = MedicalModel()
 validator = DataValidator()
-estadisticas = EstadisticasPredicciones()
+
+
+def get_estadisticas():
+    """Obtiene una instancia fresca de estadísticas desde el archivo."""
+    return EstadisticasPredicciones()
 
 
 # Ruta raíz informativa
@@ -56,7 +60,8 @@ def predecir():
         resultado = model.predecir(datos_procesados)
         
         # Registrar predicción en estadísticas
-        estadisticas.registrar_prediccion(
+        stats = get_estadisticas()
+        stats.registrar_prediccion(
             edad=datos["edad"],
             fiebre=datos["fiebre"],
             dolor=datos["dolor"],
@@ -85,8 +90,9 @@ def obtener_estadisticas():
     - Fecha de última predicción
     """
     try:
-        stats = estadisticas.obtener_estadisticas()
-        return jsonify(stats), 200
+        stats = get_estadisticas()
+        stats_data = stats.obtener_estadisticas()
+        return jsonify(stats_data), 200
     except Exception as e:
         return jsonify({"error": f"Error al obtener estadísticas: {str(e)}"}), 500
 
