@@ -6,14 +6,14 @@ from src.estadisticas import EstadisticasPredicciones
 
 app = Flask(__name__)
 
-# --- Inicializar componentes ---
+# Inicializar componentes
 preprocessor = Preprocessor()
 model = MedicalModel()
 validator = DataValidator()
 estadisticas = EstadisticasPredicciones()
 
 
-# --- Ruta raíz informativa ---
+# Ruta raíz informativa
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({
@@ -23,7 +23,7 @@ def home():
     })
 
 
-# --- Endpoint principal de predicción ---
+# Endpoint principal de predicción
 @app.route("/predecir", methods=["POST"])
 def predecir():
     """
@@ -73,7 +73,7 @@ def predecir():
         return jsonify({"error": f"Error interno: {str(e)}"}), 500
 
 
-# --- Endpoint de estadísticas ---
+# Endpoint de estadísticas
 @app.route("/estadisticas", methods=["GET"])
 def obtener_estadisticas():
     """

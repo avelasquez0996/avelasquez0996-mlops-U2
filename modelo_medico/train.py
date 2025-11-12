@@ -93,20 +93,17 @@ class ModelTrainer:
         Args:
             metricas (dict): Métricas de entrenamiento
         """
-        print("\n" + "="*60)
         print("RESULTADOS DEL ENTRENAMIENTO Y VALIDACIÓN")
-        print("="*60)
         
         print(f"\nAccuracy General: {metricas['accuracy']:.4f} ({metricas['accuracy']*100:.2f}%)")
         
-        print("\n--- Métricas por Clase ---")
+        print("\n Métricas por Clase ")
         for clase, metrica in metricas['por_clase'].items():
             print(f"\n{clase}:")
             print(f"  Precision: {metrica['precision']:.4f}")
             print(f"  Recall: {metrica['recall']:.4f}")
             print(f"  F1-Score: {metrica['f1_score']:.4f}")
         
-        print("\n" + "="*60)
     
     def simular_reentrenamiento_periodico(self):
         """

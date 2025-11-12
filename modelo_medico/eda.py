@@ -112,27 +112,24 @@ class ExploratoryDataAnalysis:
         Args:
             resumen (dict): Resultado de cargar_y_analizar
         """
-        print("\n" + "="*60)
         print("ANÁLISIS EXPLORATORIO DE DATOS (EDA)")
-        print("="*60)
         
         print(f"\nRegistros analizados: {resumen['cantidad_registros']}")
         
-        print("\n--- Estadísticas Descriptivas ---")
+        print("\n Estadísticas Descriptivas ")
         for campo, stats in resumen['estadisticas_descriptivas'].items():
             print(f"\n{campo}:")
             for metrica, valor in stats.items():
                 print(f"  {metrica}: {valor}")
         
-        print("\n--- Correlaciones entre Variables ---")
+        print("\n Correlaciones entre Variables ")
         for par, corr in resumen['correlaciones'].items():
             print(f"  {par}: {corr}")
         
-        print("\n--- Distribución de Diagnósticos ---")
+        print("\n Distribución de Diagnósticos ")
         for diag, stats in resumen['distribucion_diagnosticos'].items():
             print(f"  {diag}: {stats['count']} casos ({stats['porcentaje']}%)")
         
-        print("\n" + "="*60)
 
 
 if __name__ == "__main__":
