@@ -36,29 +36,29 @@ def predecir():
     """
     try:
         datos = request.get_json()
-        
+
         # Validación de entrada
         if not datos:
             return jsonify({"error": "Se requiere JSON en el body"}), 400
-        
+
         # Validar campos requeridos
         campos_requeridos = ["edad", "fiebre", "dolor"]
         if not all(k in datos for k in campos_requeridos):
             return jsonify({
                 "error": f"Faltan datos. Se requieren: {', '.join(campos_requeridos)}"
             }), 400
-        
+
         # Validar tipos y rangos
         validacion = validator.validar(datos)
         if not validacion["valido"]:
             return jsonify({"error": validacion["mensaje"]}), 400
-        
+
         # Preprocesar datos
         datos_procesados = preprocessor.procesar(datos)
-        
+
         # Predicción del modelo
         resultado = model.predecir(datos_procesados)
-        
+
         # Registrar predicción en estadísticas
         stats = get_estadisticas()
         stats.registrar_prediccion(
@@ -67,7 +67,7 @@ def predecir():
             dolor=datos["dolor"],
             resultado=resultado
         )
-        
+
         # Respuesta con estructura solicitada
         return jsonify({
             "resultado": resultado,
