@@ -1,7 +1,14 @@
 # Changelog - Refactor Producción
-
+ 
 ## ✨ Nuevas Características
-
+ 
+### Comparación con la propuesta inicial
+ 
+- **Antes:** Pipeline descrito en [`pipeline.md`](pipeline.md:1) sin DVC, sin MLflow y sin una persistencia estructurada de predicciones.
+- **Ahora:** Pipeline de **MLOps nivel 2** con DVC para datos y modelos, MLflow para tracking de experimentos, API FastAPI y despliegue con Docker Compose.
+- **Antes:** API basada en Flask sin validación fuerte ni documentación automática.
+- **Ahora:** API basada en FastAPI + Pydantic, con validación de tipos y documentación Swagger en `/docs`.
+ 
 ### Arquitectura MLOps
 - **DVC (Data Version Control)**:
   - Implementado pipeline reproducible en `dvc.yaml` (etapas: `prepare`, `train`).
