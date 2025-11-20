@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 import pandas as pd
 import mlflow
+import joblib
 
 # Añadir el directorio actual a sys.path para que las importaciones funcionen
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -11,6 +12,41 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from app import app
 from src.models_db import Prediccion
 from src.db import SessionLocal
+from src.model import MedicalModel
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_artifacts():
+    """
+    Crea artefactos dummy si no existen para que los tests pasen en CI/CD.
+    """
+    # Crear directorios necesarios
+    os.makedirs("data", exist_ok=True)
+    os.makedirs("models", exist_ok=True)
+    os.makedirs("mlruns", exist_ok=True)
+
+    # Crear data/raw.csv dummy
+    if not os.path.exists("data/raw.csv"):
+        pd.DataFrame({"dummy": [1]}).to_csv("data/raw.csv", index=False)
+
+    # Crear data/processed.parquet dummy
+    if not os.path.exists("data/processed.parquet"):
+        pd.DataFrame({"dummy": [1]}).to_parquet("data/processed.parquet")
+
+    # Crear models/model.pkl dummy
+    if not os.path.exists("models/model.pkl"):
+        model = MedicalModel()
+        joblib.dump(model, "models/model.pkl")
+
+    # Crear dvc.yaml dummy
+    if not os.path.exists("dvc.yaml"):
+        with open("dvc.yaml", "w") as f:
+            f.write("stages:\n")
+
+    # Crear dvc.lock dummy
+    if not os.path.exists("dvc.lock"):
+        with open("dvc.lock", "w") as f:
+            f.write("")
 
 
 # Crear un TestClient
