@@ -1,101 +1,65 @@
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+import joblib
+import json
+from contextlib import asynccontextmanager
+
+from src.db import engine, SessionLocal
+from src.models_db import Base, Prediccion
 from src.preprocessor import Preprocessor
-from src.model import MedicalModel
-from src.validator import DataValidator
-from src.estadisticas import EstadisticasPredicciones
+from src.schemas import PatientInput, PredictionResponse, PredictionOut
+from typing import List
 
-app = Flask(__name__)
-
-# Inicializar componentes
+model = None
 preprocessor = Preprocessor()
-model = MedicalModel()
-validator = DataValidator()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    global model
+    Base.metadata.create_all(bind=engine)
+    model = joblib.load("models/model.pkl")
+    yield
+    # Shutdown
 
-def get_estadisticas():
-    """Obtiene una instancia fresca de estadísticas desde el archivo."""
-    return EstadisticasPredicciones()
+app = FastAPI(title="API de predicción médica", version="1.0", lifespan=lifespan)
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# Ruta raíz informativa
-@app.route("/", methods=["GET"])
+@app.get("/")
 def home():
-    return jsonify({
+    return {
         "mensaje": "API de predicción médica",
         "version": "1.0",
-        "uso": "POST /predecir con JSON {'edad': number, 'fiebre': number, 'dolor': number}"
-    })
+        "uso": "POST /predict con JSON {'edad': number, 'fiebre': number, 'dolor': number}"
+    }
 
+@app.post("/predict", response_model=PredictionResponse)
+def predict(patient: PatientInput, db: Session = Depends(get_db)):
+    processed = preprocessor.procesar(patient.dict())
+    result = model.predecir_con_scores(processed)
+    pred = result["prediccion"]
+    proba = max(result["scores"].values())
+    
+    prediccion = Prediccion(
+        paciente_id=json.dumps(patient.dict()),
+        prediction=pred,
+        probability=proba
+    )
+    db.add(prediccion)
+    db.commit()
+    db.refresh(prediccion)
+    return PredictionResponse(resultado=pred, entrada=patient)
 
-# Endpoint principal de predicción
-@app.route("/predecir", methods=["POST"])
-def predecir():
-    """
-    Endpoint para predecir enfermedad basado en síntomas del paciente.
-    Entrada esperada: {"edad": number, "fiebre": number, "dolor": number}
-    """
-    try:
-        datos = request.get_json()
-
-        # Validación de entrada
-        if not datos:
-            return jsonify({"error": "Se requiere JSON en el body"}), 400
-
-        # Validar campos requeridos
-        campos_requeridos = ["edad", "fiebre", "dolor"]
-        if not all(k in datos for k in campos_requeridos):
-            return jsonify({
-                "error": f"Faltan datos. Se requieren: {', '.join(campos_requeridos)}"
-            }), 400
-
-        # Validar tipos y rangos
-        validacion = validator.validar(datos)
-        if not validacion["valido"]:
-            return jsonify({"error": validacion["mensaje"]}), 400
-
-        # Preprocesar datos
-        datos_procesados = preprocessor.procesar(datos)
-
-        # Predicción del modelo
-        resultado = model.predecir(datos_procesados)
-
-        # Registrar predicción en estadísticas
-        stats = get_estadisticas()
-        stats.registrar_prediccion(
-            edad=datos["edad"],
-            fiebre=datos["fiebre"],
-            dolor=datos["dolor"],
-            resultado=resultado
-        )
-
-        # Respuesta con estructura solicitada
-        return jsonify({
-            "resultado": resultado,
-            "entrada": datos
-        }), 200
-
-    except Exception as e:
-        return jsonify({"error": f"Error interno: {str(e)}"}), 500
-
-
-# Endpoint de estadísticas
-@app.route("/estadisticas", methods=["GET"])
-def obtener_estadisticas():
-    """
-    Retorna estadísticas de predicciones realizadas.
-    Incluye:
-    - Total de predicciones
-    - Conteos por categoría
-    - Últimas 5 predicciones
-    - Fecha de última predicción
-    """
-    try:
-        stats = get_estadisticas()
-        stats_data = stats.obtener_estadisticas()
-        return jsonify(stats_data), 200
-    except Exception as e:
-        return jsonify({"error": f"Error al obtener estadísticas: {str(e)}"}), 500
-
+@app.get("/predictions", response_model=List[PredictionOut])
+def get_predictions(db: Session = Depends(get_db)):
+    return db.query(Prediccion).order_by(Prediccion.created_at.desc()).all()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    import uvicorn
+    uvicorn.run("modelo_medico.app:app", host="0.0.0.0", port=8000, reload=True)
