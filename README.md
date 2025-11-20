@@ -563,8 +563,8 @@ docker compose restart api
 ```
 
 ## Documentación Adicional
-
-- **Arquitectura completa**: Ver `docs/PROPUESTA_ARQUITECTURA.md`
-- **Decisiones técnicas**: Ver `docs/adr/`
+ 
+- **Propuesta general del pipeline de MLOps y arquitectura completa**: Ver `docs/PROPUESTA_ARQUITECTURA.md`
+- **Decisiones técnicas (ADRs)**: Ver `docs/adr/`
 - **API Swagger**: http://localhost:8000/docs (en tiempo de ejecución)
 - **MLflow UI**: http://localhost:5000 (en tiempo de ejecución)
