@@ -20,3 +20,9 @@ Utilizar **SQLite** como motor de base de datos único.
 * **Negativas**:
     * No apto para alta concurrencia de escritura (múltiples instancias de la API escribiendo a la vez).
     * Migración necesaria si el sistema escala a nivel hospitalario regional.
+
+## Implementación
+Completada en Phase 4: src/db.py (SQLAlchemy models, engine), integrado en app.py.
+
+**Fecha**: 2025-11-20
+**Verificación**: `sqlite3 predicciones.db ".schema"`, rows after predictions.

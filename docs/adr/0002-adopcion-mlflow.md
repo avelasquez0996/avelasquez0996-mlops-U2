@@ -19,3 +19,9 @@ Implementar **MLflow** para:
     * Estandarización del formato de empaquetado del modelo.
 * **Negativas**:
     * Requiere infraestructura adicional (servidor MLflow) para el escenario de servidor (en local puede ser basado en archivos).
+
+## Implementación
+Completada en Phase 3: Integración en train.py (log params/metrics/model).
+
+**Fecha**: 2025-11-20
+**Verificación**: `mlflow ui`, runs en mlruns/0/, model artifacts logged.
