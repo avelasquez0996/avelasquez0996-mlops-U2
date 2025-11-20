@@ -43,6 +43,10 @@ class ModelTrainer:
             X, y, test_size=test_size, random_state=random_state, stratify=y
         )
         
+        mlflow.log_param("n_samples", len(df))
+        mlflow.log_param("n_train", len(X_train))
+        mlflow.log_param("n_test", len(X_test))
+        
         print(f"\nDatos de entrenamiento: {len(X_train)}")
         print(f"Datos de validación: {len(X_test)}")
         
@@ -117,17 +121,32 @@ class ModelTrainer:
 
 
 if __name__ == "__main__":
-    trainer = ModelTrainer()
-    
-    print("\nIniciando entrenamiento del modelo...")
-    metricas = trainer.entrenar_y_validar()
-    
-    # Save model
-    os.makedirs('models', exist_ok=True)
-    joblib.dump(trainer.model, 'models/model.pkl')
-    print("Modelo guardado en models/model.pkl")
-    
-    print("\nSimulando reentrenamiento periódico...")
-    reentrenamiento_info = trainer.simular_reentrenamiento_periodico()
-    print(f"  {reentrenamiento_info['estado']}")
-    print(f"  Frecuencia: {reentrenamiento_info['frecuencia_reentrenamiento']}")
+    mlflow.set_tracking_uri("./mlruns")
+    with open('params.yaml', 'r') as f:
+        params_dict = yaml.safe_load(f)
+    with mlflow.start_run():
+        mlflow.log_params(params_dict['train'])
+        mlflow.log_param("raw.max_samples", params_dict['raw']['max_samples'])
+        
+        trainer = ModelTrainer()
+        
+        print("\nIniciando entrenamiento del modelo...")
+        metricas = trainer.entrenar_y_validar()
+        
+        # Log metrics
+        mlflow.log_metric("accuracy", metricas['accuracy'])
+        for clase, metrica in metricas['por_clase'].items():
+            mlflow.log_metric(f"precision_{clase}", metrica['precision'])
+            mlflow.log_metric(f"recall_{clase}", metrica['recall'])
+            mlflow.log_metric(f"f1_{clase}", metrica['f1_score'])
+        
+        # Save model
+        os.makedirs('models', exist_ok=True)
+        joblib.dump(trainer.model, 'models/model.pkl')
+        print("Modelo guardado en models/model.pkl")
+        mlflow.log_artifact("models/model.pkl", "model")
+        
+        print("\nSimulando reentrenamiento periódico...")
+        reentrenamiento_info = trainer.simular_reentrenamiento_periodico()
+        print(f"  {reentrenamiento_info['estado']}")
+        print(f"  Frecuencia: {reentrenamiento_info['frecuencia_reentrenamiento']}")
