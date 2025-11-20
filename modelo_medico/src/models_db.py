@@ -4,6 +4,7 @@ from sqlalchemy.sql import func
 
 Base = declarative_base()
 
+
 class Prediccion(Base):
     __tablename__ = "prediccion"
 

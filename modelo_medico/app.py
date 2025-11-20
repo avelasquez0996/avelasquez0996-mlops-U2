@@ -13,6 +13,7 @@ from typing import List
 model = None
 preprocessor = Preprocessor()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -22,7 +23,9 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
 
+
 app = FastAPI(title="API de predicción médica", version="1.0", lifespan=lifespan)
+
 
 def get_db():
     db = SessionLocal()
@@ -31,35 +34,38 @@ def get_db():
     finally:
         db.close()
 
+
 @app.get("/")
 def home():
     return {
         "mensaje": "API de predicción médica",
         "version": "1.0",
-        "uso": "POST /predict con JSON {'edad': number, 'fiebre': number, 'dolor': number}"
+        "uso": "POST /predict con JSON {'edad': number, 'fiebre': number, 'dolor': number}",
     }
+
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict(patient: PatientInput, db: Session = Depends(get_db)):
-    processed = preprocessor.procesar(patient.dict())
+    processed = preprocessor.procesar(patient.model_dump())
     result = model.predecir_con_scores(processed)
     pred = result["prediccion"]
     proba = max(result["scores"].values())
-    
+
     prediccion = Prediccion(
-        paciente_id=json.dumps(patient.dict()),
-        prediction=pred,
-        probability=proba
+        paciente_id=json.dumps(patient.model_dump()), prediction=pred, probability=proba
     )
     db.add(prediccion)
     db.commit()
     db.refresh(prediccion)
     return PredictionResponse(resultado=pred, entrada=patient)
 
+
 @app.get("/predictions", response_model=List[PredictionOut])
 def get_predictions(db: Session = Depends(get_db)):
     return db.query(Prediccion).order_by(Prediccion.created_at.desc()).all()
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("modelo_medico.app:app", host="0.0.0.0", port=8000, reload=True)
