@@ -1,0 +1,33 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python -m src.prepare
+    deps:
+    - path: data/raw.csv
+      hash: md5
+      md5: cbd1a9912a96c2d39bf116f37315997d
+      size: 36561
+    params:
+      params.yaml:
+        raw.max_samples: 1000
+    outs:
+    - path: data/processed.parquet
+      hash: md5
+      md5: cafb107bd046899bcd73818f62aeb8dc
+      size: 12193
+  train:
+    cmd: python train.py
+    deps:
+    - path: data/processed.parquet
+      hash: md5
+      md5: cafb107bd046899bcd73818f62aeb8dc
+      size: 12193
+    params:
+      params.yaml:
+        train.random_state: 42
+        train.test_size: 0.2
+    outs:
+    - path: models/model.pkl
+      hash: md5
+      md5: 0299e05d94eac8a2c09d903fecda593b
+      size: 44

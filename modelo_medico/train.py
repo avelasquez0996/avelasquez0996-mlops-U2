@@ -3,72 +3,71 @@ Script de entrenamiento y validación del modelo.
 Etapas 4-5 del pipeline: Entrenamiento, validación y pruebas
 """
 
-from src.data_loader import DataLoader
-from src.preprocessor import Preprocessor
+import pandas as pd
+import yaml
+import joblib
+import os
+import numpy as np
+from sklearn.model_selection import train_test_split
+
 from src.model import MedicalModel
 from src.metrics import ModelMetrics
-import numpy as np
 
 
 class ModelTrainer:
     """Entrena y valida el modelo de ML"""
     
     def __init__(self):
-        self.data_loader = DataLoader()
-        self.preprocessor = Preprocessor()
         self.model = MedicalModel()
         self.metrics = ModelMetrics()
     
-    def entrenar_y_validar(self, cantidad_datos=1000, split_train_test=0.8):
+    def entrenar_y_validar(self):
         """
-        Entrena el modelo con datos sintéticos y lo valida.
-        
-        Args:
-            cantidad_datos (int): Cantidad total de datos a usar
-            split_train_test (float): Proporción de datos para entrenamiento
-            
-        Returns:
-            dict: Métricas de entrenamiento y validación
+        Entrena el modelo con datos procesados y lo valida.
         """
-        # Etapa 1: Ingesta y limpieza de datos
-        datos = self.data_loader.obtener_datos_procesados(cantidad_datos)
+        # Load params
+        with open('params.yaml', 'r') as f:
+            params_dict = yaml.safe_load(f)
+        test_size = params_dict['train']['test_size']
+        random_state = params_dict['train']['random_state']
         
-        # Split train-test
-        split_idx = int(len(datos) * split_train_test)
-        datos_entrenamiento = datos[:split_idx]
-        datos_validacion = datos[split_idx:]
+        # Load processed data
+        df = pd.read_parquet('data/processed.parquet')
         
-        print(f"\nDatos de entrenamiento: {len(datos_entrenamiento)}")
-        print(f"Datos de validación: {len(datos_validacion)}")
+        # Features and labels
+        X = df[['edad_norm', 'fiebre_norm', 'dolor_norm']]
+        y = df['diagnostico']
         
-        # Etapa 2: Predicciones en validación
-        y_true_val = [r["diagnostico"] for r in datos_validacion]
+        # Split
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=y
+        )
+        
+        print(f"\nDatos de entrenamiento: {len(X_train)}")
+        print(f"Datos de validación: {len(X_test)}")
+        
+        # Predictions
         y_pred_val = []
-        
-        for registro in datos_validacion:
-            datos_proc = self.preprocessor.procesar({
-                "edad": registro["edad"],
-                "fiebre": registro["fiebre"],
-                "dolor": registro["dolor"]
-            })
+        for _, row in X_test.iterrows():
+            datos_proc = {
+                "edad": row['edad_norm'],
+                "fiebre": row['fiebre_norm'],
+                "dolor": row['dolor_norm']
+            }
             prediccion = self.model.predecir(datos_proc)
             y_pred_val.append(prediccion)
         
-        # Etapa 3: Calcular métricas
+        # Metrics
+        y_true_val = y_test.tolist()
         metricas = self._calcular_metricas(y_true_val, y_pred_val)
+        
+        self.mostrar_resultados_entrenamiento(metricas)
         
         return metricas
     
     def _calcular_metricas(self, y_true, y_pred):
         """
         Calcula métricas de rendimiento del modelo.
-        
-        Args:
-            y_true: Etiquetas verdaderas
-            y_pred: Predicciones
-            
-        Returns:
-            dict: Métricas calculadas
         """
         clases = list(set(y_true))
         
@@ -89,9 +88,6 @@ class ModelTrainer:
     def mostrar_resultados_entrenamiento(self, metricas):
         """
         Imprime los resultados del entrenamiento.
-        
-        Args:
-            metricas (dict): Métricas de entrenamiento
         """
         print("RESULTADOS DEL ENTRENAMIENTO Y VALIDACIÓN")
         
@@ -103,7 +99,6 @@ class ModelTrainer:
             print(f"  Precision: {metrica['precision']:.4f}")
             print(f"  Recall: {metrica['recall']:.4f}")
             print(f"  F1-Score: {metrica['f1_score']:.4f}")
-        
     
     def simular_reentrenamiento_periodico(self):
         """
@@ -125,8 +120,12 @@ if __name__ == "__main__":
     trainer = ModelTrainer()
     
     print("\nIniciando entrenamiento del modelo...")
-    metricas = trainer.entrenar_y_validar(cantidad_datos=500)
-    trainer.mostrar_resultados_entrenamiento(metricas)
+    metricas = trainer.entrenar_y_validar()
+    
+    # Save model
+    os.makedirs('models', exist_ok=True)
+    joblib.dump(trainer.model, 'models/model.pkl')
+    print("Modelo guardado en models/model.pkl")
     
     print("\nSimulando reentrenamiento periódico...")
     reentrenamiento_info = trainer.simular_reentrenamiento_periodico()
