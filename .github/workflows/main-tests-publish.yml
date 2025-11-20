@@ -65,7 +65,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./modelo_medico
           file: ./modelo_medico/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
