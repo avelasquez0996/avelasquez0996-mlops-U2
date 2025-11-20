@@ -5,11 +5,12 @@ Etapas 4-5 del pipeline: Entrenamiento, validación y pruebas
 
 import pandas as pd
 import yaml
-import joblib
+from src.model_utils import save_model
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
-
+import mlflow
+ 
 from src.model import MedicalModel
 from src.metrics import ModelMetrics
 
@@ -142,7 +143,7 @@ if __name__ == "__main__":
         
         # Save model
         os.makedirs('models', exist_ok=True)
-        joblib.dump(trainer.model, 'models/model.pkl')
+        save_model(trainer.model, 'models/model.pkl')
         print("Modelo guardado en models/model.pkl")
         mlflow.log_artifact("models/model.pkl", "model")
         

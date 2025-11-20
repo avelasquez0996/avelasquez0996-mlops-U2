@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-import joblib
+from src.model_utils import load_model
 import json
 from contextlib import asynccontextmanager
 
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     # Startup
     global model
     Base.metadata.create_all(bind=engine)
-    model = joblib.load("models/model.pkl")
+    model = load_model("models/model.pkl")
     yield
     # Shutdown
 
