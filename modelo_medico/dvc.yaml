@@ -1,0 +1,19 @@
+stages:
+  prepare:
+    cmd: python -m src.prepare
+    deps:
+      - data/raw.csv
+    params:
+      - raw.max_samples
+    outs:
+      - data/processed.parquet
+
+  train:
+    cmd: python train.py
+    deps:
+      - data/processed.parquet
+    params:
+      - train.test_size
+      - train.random_state
+    outs:
+      - models/model.pkl

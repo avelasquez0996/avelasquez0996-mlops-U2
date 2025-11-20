@@ -1,24 +1,24 @@
-# Imagen base oficial de Python
 FROM python:3.12-slim
 
-# Instalar herramientas de compilación necesarias
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Directorio de trabajo dentro del contenedor
-WORKDIR /app/modelo_medico
+WORKDIR /app
 
-# Copiar archivos necesarios
-COPY modelo_medico/requirements.txt .
+COPY requirements.txt .
+
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir dvc
 
-# Copiar la aplicación completa
-COPY modelo_medico/ .
+COPY . .
 
-# Exponer el puerto donde corre Flask
-EXPOSE 5000
+EXPOSE 8000
 
-# Comando para ejecutar la aplicación
-CMD ["python", "app.py"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/ || exit 1
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
